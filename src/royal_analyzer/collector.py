@@ -9,6 +9,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 from .dom_parser import DomParser
 from .models import GameResult
@@ -30,9 +32,6 @@ class SeleniumCollector:
 
     def start_driver(self) -> Any:
         """Create Selenium Chrome driver and navigate to the configured game URL."""
-        from selenium import webdriver
-        from selenium.webdriver.chrome.options import Options
-
         options = Options()
         if self.headless:
             options.add_argument("--headless=new")

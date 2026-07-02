@@ -4,10 +4,9 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any, TYPE_CHECKING
+from typing import Any
 
-if TYPE_CHECKING:
-    from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.remote.webelement import WebElement
 
 from .dice_decoder import decode_die, parse_grid_area
 from .models import GameResult
@@ -23,7 +22,7 @@ class DomParser:
         self.selectors_path = Path(selectors_path)
         self.selectors: dict[str, Any] = json.loads(self.selectors_path.read_text(encoding="utf-8"))
 
-    def decode_die_element(self, element: "WebElement") -> int:
+    def decode_die_element(self, element: WebElement) -> int:
         """Decode one Selenium die element by reading child pip grid-area styles."""
         coords = []
         for pip in element.find_elements("css selector", self.selectors["pip"]):
@@ -32,7 +31,7 @@ class DomParser:
                 coords.append(coord)
         return decode_die(coords)
 
-    def parse_round(self, round_element: "WebElement") -> GameResult | None:
+    def parse_round(self, round_element: WebElement) -> GameResult | None:
         """Parse a history row and return a completed five-dice result when available."""
         dice_elements = round_element.find_elements("css selector", self.selectors["die_container"])
         if len(dice_elements) < 5:
