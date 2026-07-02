@@ -1,0 +1,7 @@
+{
+  "game_url": "https://app.playnautica.ru/royal/",
+  "history_container": "[data-role='history'], .history, [class*='history']",
+  "round_container": "[data-role='round'], .history-item, [class*='history-item']",
+  "die_container": "[color='Red'], [color='Blue']",
+  "pip": "div[style*='grid-area']"
+}
