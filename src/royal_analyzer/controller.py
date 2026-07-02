@@ -34,6 +34,7 @@ class RoyalAnalyzerController:
         self.last_recommendations: list[Recommendation] = []
         self.last_group_id: str | None = None
         self.listeners: list[Callable[[str], None]] = []
+        self.last_error: str | None = None
 
     def add_listener(self, listener: Callable[[str], None]) -> None:
         """Register a text event listener for GUI logs."""
@@ -51,6 +52,8 @@ class RoyalAnalyzerController:
             self.emit("Парсер уже запущен")
             return
         self._stop.clear()
+        self.last_error = None
+        self.build_recommendations(save=True)
         self.collector = SeleniumCollector(self.selectors_path, poll_interval=0.5, headless=headless)
         self._thread = threading.Thread(target=self._run_collector, args=(keep_alive_enabled,), daemon=True)
         self._thread.start()
@@ -71,6 +74,8 @@ class RoyalAnalyzerController:
                 self._stop.wait(self.collector.poll_interval)
         except Exception as exc:
             LOGGER.exception("Live collector failed")
+            self.last_error = str(exc)
+            self.emit(f"Ошибка парсера: {exc}. Если браузер не стартует в Linux, установите системные библиотеки Chrome/Qt (например libatk, libnss3, libxkbcommon, libGL) или запустите на рабочей desktop-системе.")
             self.emit(f"Ошибка парсера: {exc}")
         finally:
             if self.keep_alive:
@@ -78,6 +83,10 @@ class RoyalAnalyzerController:
             if self.collector:
                 self.collector.close()
             self.emit("Парсер остановлен")
+
+    def is_running(self) -> bool:
+        """Return True while the background parser thread is alive."""
+        return bool(self._thread and self._thread.is_alive())
 
     def stop(self) -> None:
         """Request live collection stop."""

@@ -21,17 +21,34 @@ LOGGER = logging.getLogger(__name__)
 class SeleniumCollector:
     """Open the Royal page, poll DOM history, and emit newly completed parties."""
 
+    def __init__(self, selectors_path: str | Path = "selectors.json", poll_interval: float = 0.5, headless: bool = False, browser_arguments: list[str] | None = None) -> None:
     def __init__(self, selectors_path: str | Path = "selectors.json", poll_interval: float = 0.5, headless: bool = False) -> None:
         self.selectors_path = Path(selectors_path)
         self.selectors = json.loads(self.selectors_path.read_text(encoding="utf-8"))
         self.poll_interval = poll_interval
         self.headless = headless
+        self.browser_arguments = browser_arguments or []
         self.parser = DomParser(selectors_path)
         self.driver: Any | None = None
         self.seen: set[str] = set()
 
     def start_driver(self) -> Any:
         """Create Selenium Chrome driver and navigate to the configured game URL."""
+        from selenium import webdriver
+        from selenium.webdriver.chrome.options import Options
+
+        options = Options()
+        default_args = [
+            "--disable-blink-features=AutomationControlled",
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--window-size=1400,900",
+        ]
+        if self.headless:
+            default_args.append("--headless=new")
+        for argument in [*default_args, *self.browser_arguments]:
+            options.add_argument(argument)
         options = Options()
         if self.headless:
             options.add_argument("--headless=new")
@@ -45,6 +62,10 @@ class SeleniumCollector:
         if not self.driver:
             raise RuntimeError("Driver is not started")
         try:
+            rounds = self.parser.discover_rounds(self.driver)
+            dice = self.driver.find_elements("css selector", self.selectors["die_container"])
+            if not rounds and not dice:
+                raise LookupError("Не найдены DOM-контейнеры кубиков. Проверьте selectors.json или авторизацию/доступность страницы.")
             self.driver.find_elements("css selector", self.selectors["round_container"])
         except Exception as exc:
             Path("debug_page.html").write_text(self.driver.page_source, encoding="utf-8")

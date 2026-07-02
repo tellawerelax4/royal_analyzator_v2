@@ -5,3 +5,5 @@ __pycache__/
 royal_analyzer.log
 debug_page.html
 debug_stacktrace.log
+
+*.egg-info/

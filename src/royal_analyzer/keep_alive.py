@@ -30,6 +30,8 @@ class KeepAlive:
     def _loop(self) -> None:
         """Perform random harmless pointer movements until stopped."""
         while not self._stop.wait(random.randint(self.min_interval, self.max_interval)):
+            from selenium.webdriver.common.action_chains import ActionChains
+
             ActionChains(self.driver).move_by_offset(random.randint(-5, 5), random.randint(-5, 5)).perform()
 
     def stop(self) -> None:
