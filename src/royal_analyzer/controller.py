@@ -76,6 +76,7 @@ class RoyalAnalyzerController:
             LOGGER.exception("Live collector failed")
             self.last_error = str(exc)
             self.emit(f"Ошибка парсера: {exc}. Если браузер не стартует в Linux, установите системные библиотеки Chrome/Qt (например libatk, libnss3, libxkbcommon, libGL) или запустите на рабочей desktop-системе.")
+            self.emit(f"Ошибка парсера: {exc}")
         finally:
             if self.keep_alive:
                 self.keep_alive.stop()

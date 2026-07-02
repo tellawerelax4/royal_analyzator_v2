@@ -7,6 +7,7 @@ from datetime import datetime, UTC
 from pathlib import Path
 
 from .models import CombinationType, GameResult, PredictionStats, Recommendation
+from .models import BetOption, CombinationType, GameResult, Recommendation
 from .statistics import classify_combination
 
 
@@ -16,6 +17,7 @@ class Storage:
     def __init__(self, db_path: str | Path = "royal_analyzer.sqlite3") -> None:
         self.db_path = Path(db_path)
         self.connection = sqlite3.connect(self.db_path, check_same_thread=False)
+        self.connection = sqlite3.connect(self.db_path)
         self.connection.row_factory = sqlite3.Row
         self.init_schema()
 
@@ -35,6 +37,12 @@ class Storage:
             CREATE TABLE IF NOT EXISTS recommendations (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 group_id TEXT NOT NULL,
+                sorted_combination TEXT NOT NULL,
+                combination_type TEXT NOT NULL,
+                UNIQUE(die1, die2, die3, die4, die5, timestamp)
+            );
+            CREATE TABLE IF NOT EXISTS recommendations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 timestamp TEXT NOT NULL,
                 first_die INTEGER NOT NULL,
                 combination_type TEXT NOT NULL,
@@ -46,6 +54,7 @@ class Storage:
                 checked INTEGER NOT NULL DEFAULT 0,
                 success INTEGER,
                 top3_success INTEGER
+                success INTEGER
             );
             CREATE TABLE IF NOT EXISTS model_weights (
                 model TEXT PRIMARY KEY,
@@ -85,6 +94,15 @@ class Storage:
             self.connection.execute(
                 "INSERT INTO games(timestamp, die1, die2, die3, die4, die5, sequence, sorted_combination, combination_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (result.timestamp.isoformat(), *result.dice, result.sequence, result.sorted_combination, combo.value),
+        self.connection.commit()
+
+    def add_game(self, result: GameResult) -> bool:
+        """Insert one completed game; return False when it is a duplicate."""
+        combo = result.combination or classify_combination(result.dice)
+        try:
+            self.connection.execute(
+                "INSERT INTO games(timestamp, die1, die2, die3, die4, die5, sorted_combination, combination_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (result.timestamp.isoformat(), *result.dice, result.sorted_combination, combo.value),
             )
             self.connection.commit()
             return True
@@ -152,6 +170,14 @@ class Storage:
     def save_virtual_bank(self, balance: float, profit: float, roi: float, drawdown: float) -> None:
         """Persist a virtual bank metric point for charts."""
         self.connection.execute("INSERT INTO virtual_bank(timestamp, balance, profit, roi, drawdown) VALUES (?, ?, ?, ?, ?)", (datetime.now(UTC).isoformat(), balance, profit, roi, drawdown))
+        self.connection.commit()
+    def save_recommendations(self, recommendations: list[Recommendation]) -> None:
+        """Persist recommendation rankings made before a party starts."""
+        now = datetime.now(UTC).isoformat()
+        self.connection.executemany(
+            "INSERT INTO recommendations(timestamp, first_die, combination_type, rating, signal_strength, expected_value, rank, model_scores) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [(now, rec.option.first_die, rec.option.combination.value, rec.rating, rec.signal_strength, rec.expected_value, rec.rank, json.dumps(rec.model_scores, ensure_ascii=False)) for rec in recommendations],
+        )
         self.connection.commit()
 
     def close(self) -> None:

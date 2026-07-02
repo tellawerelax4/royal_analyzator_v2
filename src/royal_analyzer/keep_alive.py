@@ -6,6 +6,7 @@ import threading
 import time
 from typing import Any
 
+from selenium.webdriver.common.action_chains import ActionChains
 
 
 class KeepAlive:

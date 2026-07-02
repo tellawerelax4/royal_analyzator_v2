@@ -7,6 +7,9 @@ import signal
 import time
 
 from .controller import RoyalAnalyzerController
+import logging
+
+from .gui import run_gui
 
 
 def configure_logging() -> None:
@@ -50,6 +53,9 @@ def main() -> int:
     args = parser.parse_args()
     if args.mode == "collect":
         return run_collect(headless=not args.headed, keep_alive=args.keep_alive)
+def main() -> int:
+    """Launch Royal Analyzer Pro desktop GUI."""
+    configure_logging()
     return run_gui()
 
 

@@ -9,6 +9,9 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+
 from .dom_parser import DomParser
 from .models import GameResult
 
@@ -19,6 +22,7 @@ class SeleniumCollector:
     """Open the Royal page, poll DOM history, and emit newly completed parties."""
 
     def __init__(self, selectors_path: str | Path = "selectors.json", poll_interval: float = 0.5, headless: bool = False, browser_arguments: list[str] | None = None) -> None:
+    def __init__(self, selectors_path: str | Path = "selectors.json", poll_interval: float = 0.5, headless: bool = False) -> None:
         self.selectors_path = Path(selectors_path)
         self.selectors = json.loads(self.selectors_path.read_text(encoding="utf-8"))
         self.poll_interval = poll_interval
@@ -45,6 +49,10 @@ class SeleniumCollector:
             default_args.append("--headless=new")
         for argument in [*default_args, *self.browser_arguments]:
             options.add_argument(argument)
+        options = Options()
+        if self.headless:
+            options.add_argument("--headless=new")
+        options.add_argument("--disable-blink-features=AutomationControlled")
         self.driver = webdriver.Chrome(options=options)
         self.driver.get(self.selectors["game_url"])
         return self.driver
@@ -58,6 +66,7 @@ class SeleniumCollector:
             dice = self.driver.find_elements("css selector", self.selectors["die_container"])
             if not rounds and not dice:
                 raise LookupError("Не найдены DOM-контейнеры кубиков. Проверьте selectors.json или авторизацию/доступность страницы.")
+            self.driver.find_elements("css selector", self.selectors["round_container"])
         except Exception as exc:
             Path("debug_page.html").write_text(self.driver.page_source, encoding="utf-8")
             Path("debug_stacktrace.log").write_text("".join(traceback.format_exception(exc)), encoding="utf-8")

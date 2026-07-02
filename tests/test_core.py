@@ -42,6 +42,9 @@ def test_storage_roundtrip_and_duplicate_detection(tmp_path):
     game = GameResult((1, 1, 2, 3, 4), combination=CombinationType.DOUBLE)
     assert storage.add_game(game)
     assert not storage.add_game(game)
+def test_storage_roundtrip(tmp_path):
+    storage = Storage(tmp_path / "test.sqlite3")
+    assert storage.add_game(GameResult((1, 1, 2, 3, 4), combination=CombinationType.DOUBLE))
     games = storage.list_games()
     assert games[0].dice == (1, 1, 2, 3, 4)
     assert games[0].combination == CombinationType.DOUBLE
