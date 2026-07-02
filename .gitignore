@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.sqlite3
+royal_analyzer.log
+debug_page.html
+debug_stacktrace.log
+
+*.egg-info/
